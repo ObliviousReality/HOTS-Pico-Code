@@ -7,6 +7,7 @@ import _thread
 ssid = "LUSUINTERNET647"
 password = "341Minimum*?@021"
 
+
 def loopLED():
     led = Pin(0, Pin.OUT)
     led.low()
@@ -17,7 +18,7 @@ def loopLED():
         led.low()
         utime.sleep(1)
         print("Loop!")
-        
+
 
 html = """
 <!DOCTYPE html>
@@ -32,7 +33,7 @@ html = """
 
 
 def connectWIFI():
-    
+
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
 
@@ -47,27 +48,28 @@ def connectWIFI():
     print(wlan.isconnected())
     ipaddr = wlan.ifconfig()[0]
     print("IP: " + ipaddr)
-    
-    
+
+
 def handleConn(c, addr):
     print("Handle CONN")
     print("A Client has connected from address: ", addr)
     req = c.recv(1024)
     req = str(req)
     print(req)
-    
+
     resp = "HTTP/1.0 200 OK\r\nContent-type: text/html\r\n\r\n"
     c.send(resp)
     c.send(html)
     c.close()
-    
+
+
 def initServer():
     addr = socket.getaddrinfo('0.0.0.0', 80)[0][-1]
     sock = socket.socket()
     sock.bind(addr)
     sock.listen(1)
     print("Server initialised and listening")
-    
+
     while True:
         try:
             print("waiting for accept:")
@@ -79,10 +81,9 @@ def initServer():
             print("Error, connection closed.")
             break
 
+
 if __name__ == "__main__":
-    _thread.start_new_thread(loopLED,())
+    _thread.start_new_thread(loopLED, ())
     connectWIFI()
-    
+
     initServer()
-    
-    
