@@ -1,12 +1,14 @@
-from machine import Pin, PWM
 import random
+from Component import Component
+
+from machine import PWM, Pin
 
 MIN = 1000000
 MID = 1500000
 MAX = 2000000
 
 
-class Servo:
+class Servo(Component):
 
     pinNo = -1
     pin = None
@@ -15,6 +17,7 @@ class Servo:
     ds = MID
 
     def __init__(self, num) -> None:
+        super().__init__()
         self.pinNo = num
         pin = Pin(num, Pin.OUT)
         servo = PWM(pin)
@@ -27,27 +30,46 @@ class Servo:
         d = (((angle - -90) * newRange) / oldRange) + MIN
         return d
 
+    def dstoangle(self, d):
+        oldRange = (MAX - MIN)
+        newRange = (90 - -90)
+        a = (((d - MIN) * newRange) / oldRange) + -90
+        return a
+
     def update(self):
-        self.pwm.duty_ns(self.ds)
+        if (self.check()):
+            self.pwm.duty_ns(self.ds)
 
     def setPos(self, ds):
         self.ds = ds
-    
+
     def setAngle(self, a):
-        oldRange = (90 - -90)
-        newRange = (MAX - MIN)
-        d = (((a - -90) * newRange) / oldRange) + MIN
-        self.ds = d
+        newDS = self.angletods(a)
+        if newDS > MAX:
+            newDS = MAX
+        elif newDS < MIN:
+            newDS = MIN
+        self.ds = newDS
+
+    def moveByAngle(self, a):
+        currentAngle = self.dstoangle(self.ds)
+        newAngle = currentAngle + a
+        newDS = self.angletods(newAngle)
+        if newDS > MAX:
+            newDS = MAX
+        elif newDS < MIN:
+            newDS = MIN
+        self.ds = newDS
 
     def maxLeft(self):
         self.ds = MIN
-    
+
     def maxRight(self):
         self.ds = MAX
 
     def center(self):
         self.ds = MID
-    
+
     def randPos(self, lb, ub):
         self.ds = random.randint(lb, ub)
 

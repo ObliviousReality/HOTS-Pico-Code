@@ -3,21 +3,29 @@ import utime
 import socket
 from machine import Pin
 import _thread
+import json
 
-ssid = "LUSUINTERNET647"
-password = "341Minimum*?@021"
+import sys
+sys.path.insert(1, "/HOTS-Pico-Code")
+from LED import LED
 
+#ssid = "LUSUINTERNET647"
+#password = "341Minimum*?@021"
+
+ssid = "Tom's Hotspot"
+password = "thisisaverysecurepassword"
+
+cs = []
+head = LED(0)
+#cs.append(LED(0))
 
 def loopLED():
-    led = Pin(0, Pin.OUT)
-    led.low()
     print("In thread")
     while True:
-        led.high()
-        utime.sleep(1)
-        led.low()
-        utime.sleep(1)
-        print("Loop!")
+        utime.sleep(0.1)
+        #for comp in cs:
+           # cs.update()
+        head.update()
 
 
 html = """
@@ -30,6 +38,16 @@ html = """
 </html>
 
 """
+
+
+def handleInput(data):
+    j = json.loads(data)
+    
+    if "toggleHead" in j:
+        print(j["toggleHead"])
+        head.setStatus(j["toggleHead"])
+    if "toggleChest" in j:
+        print("Toggle Chest")
 
 
 def connectWIFI():
@@ -51,11 +69,19 @@ def connectWIFI():
 
 
 def handleConn(c, addr):
-    print("Handle CONN")
     print("A Client has connected from address: ", addr)
     req = c.recv(1024)
     req = str(req)
-    print(req)
+    #length = int(
+    header = req.split("\\r\\n")
+    contentSize = 0
+    for item in header:
+        if "Content-Length" in item:
+            contentSize = item.split(" ")[1]
+            
+    data = c.read(int(contentSize))
+    
+    handleInput(data)
 
     resp = "HTTP/1.0 200 OK\r\nContent-type: text/html\r\n\r\n"
     c.send(resp)
