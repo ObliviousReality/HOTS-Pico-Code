@@ -16,6 +16,8 @@ class Servo(Component):
 
     ds = MID
 
+    moveRandomly = False
+
     def __init__(self, num) -> None:
         super().__init__()
         self.pinNo = num
@@ -38,6 +40,10 @@ class Servo(Component):
 
     def update(self):
         if (self.check()):
+            if self.moveRandomly:
+                self.randAngle(-20, 20)
+                # Random time between 0.2s and 0.8s
+                self.setResetTimer(random.randint(2, 8))
             self.pwm.duty_ns(self.ds)
 
     def setPos(self, ds):
@@ -75,3 +81,10 @@ class Servo(Component):
 
     def randAngle(self, lb, ub):
         self. ds = random.randint(self.angletods(lb), self.angletods(ub))
+
+    def setRandomMove(self, bool):
+        if bool == "True":
+            self.moveRandomly = True
+        else:
+            self.moveRandomly = False
+            self.setResetTimer(1)

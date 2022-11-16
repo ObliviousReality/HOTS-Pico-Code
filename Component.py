@@ -19,6 +19,9 @@ class Component:
         return self.updateReset
 
     def check(self):
+        if self.updateTimer == 0:
+            return False
+
         if self.updateTimer > 0:
             self.updateTimer -= 1
             return False
