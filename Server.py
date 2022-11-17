@@ -19,6 +19,7 @@ password = "thisisaverysecurepassword"
 
 head = LED(0)
 chest = LED(1)
+# Ports are wrong and TODO: Need changing, especially port #3 as that's a ground pin.
 legs = [Servo(2), Servo(3)]
 arm = Servo(4)
 motor = Motor(5)
@@ -52,6 +53,7 @@ def handleInput(data):
     j = json.loads(data)
 
     if "allOff" in j:
+        print("allOff")
         chest.off()
         # just going to
         head.off()
@@ -59,8 +61,32 @@ def handleInput(data):
         for l in legs:
             l.center()
         motor.off()
+        # LED off
+        return
+
+    if "reset" in j:
+        print("reset")
+        chest.off()
+        chest.setPulseRate(0)
+        head.off()
+        head.setPulseRate(0)
+        arm.maxRight()
+        for l in legs:
+            l.setRandomMove("False")
+            l.center()
+        motor.off()
+        motor.setRate(0)
+        # LED ON
+        utime.sleep(0.5)
+        # LED OFF
+        utime.sleep(0.5)
+        # LED ON
+        utime.sleep(0.5)
+        # LED OFF
+        return
 
     if "raiseArm" in j:
+        print("raiseArm")
         b = j["raiseArm"]
         if b == "True":
             arm.maxLeft()  # could be the wrong way around
@@ -68,6 +94,7 @@ def handleInput(data):
             arm.maxRight()
 
     if "toggleLegs" in j:
+        print("toggleLegs")
         for l in legs:
             l.setRandomMove(j["toggleLegs"])
 
@@ -75,20 +102,27 @@ def handleInput(data):
         print(j["toggleHead"])
         head.setStatus(j["toggleHead"])
     if "headColour" in j:
+        print(j["headColour"])
         head.setColour(j["headColour"])
     if "headPulseRate" in j:
+        print(j["headPulseRate"])
         head.setPulseRate(j["headPulseRate"])
 
     if "toggleChest" in j:
+        print(j["toggleChest"])
         chest.setStatus(j["toggleChest"])
     if "chestColour" in j:
+        print(j["chestColour"])
         chest.setColour(j["chestColour"])
     if "chestPulseRate" in j:
+        print(j["chestPulseRate"])
         chest.setPulseRate(j["chestPulseRate"])
 
     if "toggleVibration" in j:
+        print(j["toggleVibration"])
         motor.setVibration(j["toggleVibration"])
     if "setVibration" in j:
+        print(j["setVibration"])
         motor.setRate(j["setVibration"])
 
 
