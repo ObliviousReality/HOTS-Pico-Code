@@ -20,7 +20,8 @@ class Component:
 
     def check(self):
         if self.updateTimer == 0:
-            return False
+            self.updateTimer = self.updateReset
+            return True
 
         if self.updateTimer > 0:
             self.updateTimer -= 1

@@ -1,19 +1,25 @@
 from Component import Component
 from machine import Pin
 from neopixel import Neopixel
+COLOUR = 0
+POWERED = 1
+PULSERATE  = 2
+BRIGHTNESS = 3
+ONTHEUP = 4
 
+OFFC = (0,0,0)
+
+CHEST = 0
+HEAD = 1
 
 class LED(Component):
     MAX_BRIGHTNESS = 255  # variable
     MED_BRIGHTNESS = 128
     MIN_BRIGHTNESS = 1
     FADE_INCREMENT = 10
-
-    colour = "FFFFFF"
-    powered = False
-    pulseRate = 0
-    brightness = MED_BRIGHTNESS
-    onTheUp = True
+    #Colour|Powered|Pulse Rate|Brightness|OnTheUp
+    leds = [[(0,0,0), False, 0, MED_BRIGHTNESS, True],
+    [(0,0,0), False, 0, MED_BRIGHTNESS, True]]
 
     pinNo = 0
     numLEDs = 0
@@ -23,68 +29,78 @@ class LED(Component):
         super().__init__()
         self.pinNo = pinNumber
         self.numLEDs = numLEDs
-        self.pin = Neopixel(numLEDs, 28, pinNumber)
-        self.setBrightness(self.MED_BRIGHTNESS)  # 0 - 255
-        self.pin.fill((0, 0, 0))
+        self.pin = Neopixel(numLEDs, 0, pinNumber, "GRB")
+        #self.setBrightness(self.MED_BRIGHTNESS)  # 0 - 255
+        self.pin.set_pixel(CHEST, self.leds[CHEST][COLOUR])
+        self.pin.set_pixel(HEAD, self.leds[HEAD][COLOUR])
         self.pin.show()
+        self.setResetTimer(1)
         print("Initted")
 
     def update(self):
-        if self.check():
-            if self.powered or self.getPulseRate() > 0:
-                self.pin.show()
-                newB = self.getBrightness()
-                if self.onTheUp:
-                    newB += self.FADE_INCREMENT
-                    if newB > self.MAX_BRIGHTNESS:
-                        self.onTheUp = False
-                        newB -= self.FADE_INCREMENT
+        for i in range(0, 2):
+            if self.leds[i][PULSERATE] > 0:
+                if self.leds[i][ONTHEUP]:
+                    self.leds[i][BRIGHTNESS]+= 255 / (6000 / self.leds[i][PULSERATE])
+                    if self.leds[i][BRIGHTNESS] >= self.MAX_BRIGHTNESS:
+                        self.leds[i][BRIGHTNESS] = self.MAX_BRIGHTNESS
+                        self.leds[i][ONTHEUP] = False
                 else:
-                    newB -= self.FADE_INCREMENT
-                    if newB < self.MIN_BRIGHTNESS:
-                        self.onTheUp = True
-                        newB += self.FADE_INCREMENT
-                self.setBrightness(newB)
-            else:
-                self.setBrightness(self.MED_BRIGHTNESS)
-                self.pin.fill((0, 0, 0))
-                # off?
+                    self.leds[i][BRIGHTNESS]-=255 / (6000 / self.leds[i][PULSERATE])
+                    if self.leds[i][BRIGHTNESS] <= self.MIN_BRIGHTNESS:
+                        self.leds[i][BRIGHTNESS] = self.MIN_BRIGHTNESS
+                        self.leds[i][ONTHEUP] = True
+                self.refresh()
+        return
+    
+    def refresh(self):
+        for i in range(0, 2):
+            self.pin.set_pixel(i, self.leds[i][COLOUR], int(self.leds[i][BRIGHTNESS]))
+        self.pin.show()
 
-    def setColour(self, newColour):
-        # newColour = newColour[1:] ??
+    def setColour(self, ID, newColour):
         r = int(newColour[0:2], 16)
         g = int(newColour[2:4], 16)
         b = int(newColour[4:6], 16)
-        self.setBrightness(self.MIN_BRIGHTNESS)
-        self.colour = (r, g, b)
+        self.leds[ID][BRIGHTNESS] = self.MAX_BRIGHTNESS
+        self.leds[ID][COLOUR] = (r, g, b)
+        self.pin.set_pixel(ID, self.leds[ID][COLOUR], self.leds[ID][BRIGHTNESS])
+        self.pin.show()
 
-    def getColour(self):
-        return self.colour
-
-    def setBrightness(self, newB):
-        self.brightness = newB
+    def setBrightness(self, ID, newB):
+        self.leds[ID][BRIGHTNESS] = newB
         self.pin.brightness(self.brightness)
 
-    def getBrightness(self):
-        return self.brightnesss
+    def on(self, ID):
+        self.leds[ID][POWERED] = True
+        
+    def off(self, ID):
+        self.leds[ID][COLOUR] = OFFC
+        self.refresh()
 
-    def on(self):
-        self.powered = True
+    def allOff(self):
+        for i in range(0, 2):
+            self.leds[i][COLOUR] = OFFC
+            self.leds[i][PULSERATE] = 0
+        self.refresh()
 
-    def off(self):
-        self.powered = False
-
-    def setStatus(self, status):
+    def setStatus(self, ID, status):
         if status == "True":
-            self.on()
+            self.on(ID)
         elif status == "False":
-            self.off()
+            self.setPulseRate(ID, 0)
+            self.off(ID)
 
-    def toggle(self):
-        self.powered = not self.powered
+    def toggle(self, ID):
+        self.leds[ID][POWERED] = not self.leds[ID][POWERED]
+        if (not self.leds[ID][POWERED]):
+            self.leds[ID][PULSERATE] = 0
 
-    def setPulseRate(self, rate):
-        self.pulseRate = rate
+    def setPulseRate(self, ID, rate):
+        self.leds[ID][PULSERATE] = int(rate)
+        if(int(rate) == 0):
+            self.leds[ID][BRIGHTNESS] = self.MAX_BRIGHTNESS
+            self.refresh()
 
-    def getPulseRate(self):
-        return self.pulseRate
+    def getPulseRate(self, ID):
+        return self.leds[ID][PULSERATE]

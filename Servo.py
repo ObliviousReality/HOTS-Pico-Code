@@ -3,9 +3,13 @@ from Component import Component
 
 from machine import PWM, Pin
 
-MIN = 1000000
+MIN = 750000
 MID = 1500000
-MAX = 2000000
+MAX = 2500000
+
+LEG_FWD = 1800000
+LEG_BCK = 1100000 
+LEG_STP = 15000
 
 
 class Servo(Component):
@@ -17,16 +21,20 @@ class Servo(Component):
     ds = MID
 
     moveRandomly = False
+    
+    movingForward = False
 
     def __init__(self, num) -> None:
         super().__init__()
         self.pinNo = num
-        pin = Pin(num, Pin.OUT)
-        servo = PWM(pin)
-        servo.freq(50)
-        servo.duty_ns(MID)
+        self.pin = Pin(num, Pin.OUT)
+        self.servo = PWM(self.pin)
+        self.servo.freq(50)
+        self.servo.duty_ns(MID)
+        self.setResetTimer(1)
+        print("Servo running on pin: "+ str(self.pinNo))
 
-    def angletods(angle):
+    def angletods(self, angle):
         oldRange = (90 - -90)
         newRange = (MAX - MIN)
         d = (((angle - -90) * newRange) / oldRange) + MIN
@@ -40,14 +48,23 @@ class Servo(Component):
 
     def update(self):
         if (self.check()):
+            #print("Servo Updating")
             if self.moveRandomly:
-                self.randAngle(-20, 20)
-                # Random time between 0.2s and 0.8s
-                self.setResetTimer(random.randint(2, 8))
-            self.pwm.duty_ns(self.ds)
+                if self.movingForward:
+                    self.ds = self.ds + LEG_STP
+                    if self.ds > LEG_FWD:
+                        self.movingForward = False
+                        self.ds = LEG_FWD
+                else:
+                    self.ds = self.ds - LEG_STP
+                    if self.ds < LEG_BCK:
+                        self.movingForward = True
+                        self.ds = LEG_BCK
+            self.servo.duty_ns(self.ds)
 
     def setPos(self, ds):
         self.ds = ds
+        
 
     def setAngle(self, a):
         newDS = self.angletods(a)
@@ -77,14 +94,25 @@ class Servo(Component):
         self.ds = MID
 
     def randPos(self, lb, ub):
-        self.ds = random.randint(lb, ub)
+        test = random.randint(10, 100)
+        x = random.randint(int(lb), int(ub))
+        self.ds = x
 
     def randAngle(self, lb, ub):
-        self. ds = random.randint(self.angletods(lb), self.angletods(ub))
+        self.randPos(self.angletods(lb), self.angletods(ub))
+        #self.ds = random.randint(self.angletods(lb), self.angletods(ub))
+    
+    def off(self):
+        self.moveRandomly = False
 
-    def setRandomMove(self, bool):
+    def setRandomMove(self, bool, pos):
         if bool == "True":
+            if pos == 1:
+                self.movingForward = True
+            else:
+                self.movingForward = False
             self.moveRandomly = True
         else:
             self.moveRandomly = False
+            self.center()
             self.setResetTimer(1)
